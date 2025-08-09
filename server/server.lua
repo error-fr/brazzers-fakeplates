@@ -61,11 +61,20 @@ RegisterNetEvent('brazzers-fakeplates:server:usePlate', function(vehNetID, vehPl
         TriggerClientEvent('inventory:client:ItemBox', src,  QBCore.Shared.Items["fakeplate"], 'remove')
         return
     end
+    -- Update fakeplate in player_vehicles
+    MySQL.update('UPDATE player_vehicles set fakeplate = ? WHERE plate = ?', {newPlate, vehPlate})
 
-    MySQL.update('UPDATE player_vehicles set fakeplate = ? WHERE plate = ?',{newPlate, vehPlate})
-    -- Transfer trunk/ glovebox items
-	MySQL.update('UPDATE trunkitems SET plate = ? WHERE plate = ?', {newPlate, vehPlate})
-	MySQL.update('UPDATE gloveboxitems SET plate = ? WHERE plate = ?', {newPlate, vehPlate})
+    -- Transfer trunk/glovebox items in trunkitems and gloveboxitems tables
+    -- MySQL.update('UPDATE trunkitems SET plate = ? WHERE plate = ?', {newPlate, vehPlate})
+    -- MySQL.update('UPDATE gloveboxitems SET plate = ? WHERE plate = ?', {newPlate, vehPlate})
+
+    -- Also copy trunk and glovebox data from player_vehicles to new fakeplate entry
+    local storageData = MySQL.single.await('SELECT trunk, glovebox FROM player_vehicles WHERE plate = ?', {vehPlate})
+    if storageData then
+        MySQL.update('UPDATE player_vehicles SET trunk = ?, glovebox = ? WHERE fakeplate = ?', {
+            storageData.trunk, storageData.glovebox, newPlate
+        })
+    end
 
     SetVehicleNumberPlateText(vehicle, newPlate)
 

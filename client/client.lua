@@ -16,11 +16,13 @@ RegisterNetEvent('brazzers-fakeplates:client:usePlate', function(plate)
     if dist <= 5.0 then
         local currentPlate = QBCore.Functions.GetPlate(vehicle)
         -- Has Keys Check
-        if exports[Config.Keys]:HasKeys(currentPlate) then
-            hasKeys = true
+        if not exports.qbx_vehiclekeys:HasKeys(vehicle) then
+            lib.notify({id = 'not_haskeys', type = 'error', description = 'Vous n\'avez pas les clés de ce véhicule'})
+            return
         end
+        hasKeys = true
         TaskTurnPedToFaceEntity(ped, vehicle, 3.0)
-        QBCore.Functions.Progressbar("attaching_plate", "Attaching Plate", 4000, false, true, {
+        QBCore.Functions.Progressbar("attaching_plate", "Installation de la plaque", 4000, false, true, {
             disableMovement = true,
             disableCarMovement = true,
             disableMouse = false,
@@ -49,7 +51,7 @@ RegisterNetEvent('brazzers-fakeplates:client:removePlate', function()
     if dist <= 5.0 then
         local currentPlate = QBCore.Functions.GetPlate(vehicle)
         -- Has Keys Check
-        if exports[Config.Keys]:HasKeys(currentPlate) then
+        if exports.qbx_vehiclekeys:HasKeys(vehicle) then
             hasKeys = true
         end
         TaskTurnPedToFaceEntity(ped, vehicle, 3.0)
@@ -82,7 +84,7 @@ CreateThread(function()
         local vehCoords = GetEntityCoords(vehicle)
         local closestPlate = QBCore.Functions.GetPlate(vehicle)
 
-        if exports[Config.Keys]:HasKeys(closestPlate) then -- Has Keys
+        if exports.qbx_vehiclekeys:HasKeys(vehicle) then -- Has Keys
             if not IsPedInAnyVehicle(PlayerPedId()) then -- Not in vehicle
                 if #(pos - vector3(vehCoords.xyz)) < 7.0 then -- dist check
                     inRange = true
@@ -107,20 +109,17 @@ CreateThread(function()
         'boot',
     }
     
-    exports[Config.Target]:AddTargetBone(bones, {
-        options = {
-            {
-                type = 'client',
-                event = 'brazzers-fakeplates:client:removePlate',
-                icon = 'fas fa-closed-captioning',
-                label = 'Remove Plate',
-                canInteract = function()
-                    if hasFakePlate then
-                        return true
-                    end
-                end,
-            }
-        },
+    exports[Config.Target]:addModel(bones, {
+        label = 'Retirer la plaque',
+        icon = 'fas fa-closed-captioning',
         distance = 2.5,
+        canInteract = function(entity)
+            local vehPlate = QBCore.Functions.GetPlate(entity)
+            if hasFakePlate and vehPlate then
+                return true
+            end
+            return false
+        end,
+        event = 'brazzers-fakeplates:client:removePlate',
     })
 end)
